@@ -159,6 +159,12 @@ bool lastButtonState = false;
 /// The start time of the button press
 unsigned long buttonPressStart = 0;
 
+/// The last time for demo mode
+unsigned long demoModeLastTime = 0;
+
+/// The demo mode.
+bool demoModeEnabled = false;
+
 
 const uint16_t whiteColors[] PROGMEM {
   0xF000, // Warm white
@@ -302,19 +308,28 @@ void setup()
   initializeMode();
   // Setup pin for the button
   pinMode(2, INPUT_PULLUP);
+  // Check if the button is pressed initially.
+  delay(200);
+  const bool buttonPressed1 = (digitalRead(2) == LOW);
+  delay(200);
+  const bool buttonPressed2 = (digitalRead(2) == LOW);
+  if (buttonPressed1 && buttonPressed2) {
+    demoModeEnabled = true;
+  }
 }
 
 
 /// The loop.
 void loop()
 {
+  const unsigned int loopTimeMs = millis();
   const bool buttonPressed = (digitalRead(2) == LOW);
   if (buttonPressed != lastButtonState) {
     lastButtonState = buttonPressed;
     if (buttonPressed) {
-      buttonPressStart = millis();
+      buttonPressStart = loopTimeMs;
     } else {
-      const unsigned long duration = millis() - buttonPressStart;
+      const unsigned long duration = loopTimeMs - buttonPressStart;
       if (duration > 40 && duration < 2000) {
         ++mode;
         initializeMode();
@@ -322,7 +337,7 @@ void loop()
     }
   }
   if (buttonPressed) {
-    const unsigned long duration = millis() - buttonPressStart;
+    const unsigned long duration = loopTimeMs - buttonPressStart;
     if (duration > 3000) {
       if (++brightness >= 8) {
         brightness = 0;
@@ -346,6 +361,11 @@ void loop()
     if (colorRotation >= (numberOfPixels*0x0100)) {
       colorRotation = 0;
     }
+  }
+  if (demoModeEnabled && ((loopTimeMs - demoModeLastTime) > 10000)) {
+    demoModeLastTime = loopTimeMs;
+    ++mode;
+    initializeMode();
   }
 }
 
